@@ -1,5 +1,7 @@
 # Patches
 
+These patches adapt the native TypeScript compiler for TSGolint and tune tsgo performance.
+
 `0006-perf-add-opt-in-node-count-checker-assignment.patch` enables descending
 node-count round-robin assignment only when `OXLINT_TSGOLINT_CHECKER_SCHEDULING=sorted`.
 It sorts a stable copy of the program files, including declarations, before
@@ -7,10 +9,7 @@ associating them with checkers. Program order is unchanged, and single-checker
 pools skip sorting. All other values retain the original assignment. See the
 [checker scheduling options](https://github.com/oxc-project/tsgolint/pull/1240).
 
-These patches do not change the behavior of typescript-go.
-The main purpose of the patches is to tune tsgo performance a bit.
-
-Module resolution caching is tracked [here](https://github.com/microsoft/typescript-go/issues/673).
+Module resolution caching is tracked in the former staging repository [here](https://github.com/microsoft/typescript-go/issues/673).
 
 TODO: propose upstreaming other patches
 
