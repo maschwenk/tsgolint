@@ -3,6 +3,8 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/microsoft/typescript-go/shim/bundled"
@@ -27,13 +29,24 @@ func enhanceHelpDiagnosticMessage(msg string) string {
 	return msg
 }
 
+// checkerCountFromEnvironment overrides typescript-go's default of four
+// checkers per program, like `tsc --checkers`. Each checker resolves types
+// independently, so more checkers trade memory for wall time.
+func checkerCountFromEnvironment() *int {
+	count, err := strconv.Atoi(os.Getenv("OXLINT_TSGOLINT_CHECKERS"))
+	if err != nil || count < 1 {
+		return nil
+	}
+	return &count
+}
+
 func CreateProgram(singleThreaded bool, fs vfs.FS, cwd string, tsconfigPath string, host compiler.CompilerHost, suppressProgramDiagnostics bool) (*compiler.Program, []diagnostic.Internal, error) {
 	resolvedConfigPath := tspath.ResolvePath(cwd, tsconfigPath)
 	if !fs.FileExists(resolvedConfigPath) {
 		return nil, nil, fmt.Errorf("couldn't read tsconfig at %v", resolvedConfigPath)
 	}
 
-	configParseResult, diagnostics := tsoptions.GetParsedCommandLineOfConfigFile(tsconfigPath, &core.CompilerOptions{}, nil, host, nil)
+	configParseResult, diagnostics := tsoptions.GetParsedCommandLineOfConfigFile(tsconfigPath, &core.CompilerOptions{Checkers: checkerCountFromEnvironment()}, nil, host, nil)
 
 	if len(diagnostics) > 0 {
 		internalDiags := make([]diagnostic.Internal, len(diagnostics))
@@ -134,6 +147,7 @@ func CreateInferredProjectProgram(singleThreaded bool, fs vfs.FS, cwd string, ho
 					ESModuleInterop:            core.TSTrue,
 					AllowNonTsExtensions:       core.TSTrue,
 					ResolveJsonModule:          core.TSTrue,
+					Checkers:                   checkerCountFromEnvironment(),
 				},
 				FileNames: fileNames,
 			},

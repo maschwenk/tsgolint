@@ -7,6 +7,7 @@ import (
 
 	"github.com/microsoft/typescript-go/shim/ast"
 	"github.com/microsoft/typescript-go/shim/bundled"
+	"github.com/microsoft/typescript-go/shim/checker"
 	"github.com/microsoft/typescript-go/shim/tspath"
 	"github.com/microsoft/typescript-go/shim/vfs/cachedvfs"
 	"github.com/microsoft/typescript-go/shim/vfs/osvfs"
@@ -367,4 +368,36 @@ function greet() {
 	assert.Equal(t, recordsByRule[ruleA].Calls, uint64(2), "rule A should count Run plus its variable listener")
 	assert.Equal(t, recordsByRule[ruleB].Calls, uint64(2), "rule B should count Run plus its function listener")
 	assert.Equal(t, recordsByRule[ruleC].Calls, uint64(1), "rule C should count its Run call")
+}
+
+func TestCreateProgram_CheckerCountFromEnvironment(t *testing.T) {
+	rootDir := fixtures.GetRootDir()
+	filePath := tspath.ResolvePath(rootDir, "file.ts")
+	fs := utils.NewOverlayVFS(
+		cachedBaseFS,
+		map[string]string{filePath: "export const value = 1;\n"},
+	)
+
+	countCheckers := func() int {
+		host := utils.CreateCompilerHost(rootDir, fs)
+		program, _, err := utils.CreateProgram(false, fs, rootDir, "tsconfig.minimal.json", host, false)
+		assert.NilError(t, err, "couldn't create program")
+
+		var mu sync.Mutex
+		count := 0
+		program.ForEachCheckerParallel(func(_ int, _ *checker.Checker) {
+			mu.Lock()
+			count++
+			mu.Unlock()
+		})
+		return count
+	}
+
+	assert.Equal(t, countCheckers(), 4)
+
+	t.Setenv("OXLINT_TSGOLINT_CHECKERS", "2")
+	assert.Equal(t, countCheckers(), 2)
+
+	t.Setenv("OXLINT_TSGOLINT_CHECKERS", "0")
+	assert.Equal(t, countCheckers(), 4)
 }
