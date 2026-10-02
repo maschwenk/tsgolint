@@ -261,7 +261,6 @@ type extra_Checker struct {
   signatureArena core.Arena[checker.Signature]
   indexInfoArena core.Arena[checker.IndexInfo]
   mergedSymbols map[*ast.Symbol]*ast.Symbol
-  mergedExportsChecked collections.Set[*ast.Symbol]
   factory ast.NodeFactory
   nodeLinks core.LinkStore[*ast.Node, checker.NodeLinks]
   signatureLinks core.LinkStore[*ast.Node, checker.SignatureLinks]
