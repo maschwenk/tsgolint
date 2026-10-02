@@ -8,7 +8,10 @@ import process from 'node:process';
 
 const npmPackageVersion = requiredEnvVar('TSGOLINT_VERSION');
 
-const NPM_ORG = `oxlint-tsgolint`;
+// Fork packaging: published as @maschwenk/oxlint-tsgolint with platform packages
+// @maschwenk/oxlint-tsgolint-<platform>-<arch>. Keep in sync with npm/core/bin/tsgolint.js.
+const CORE_PACKAGE_NAME = '@maschwenk/oxlint-tsgolint';
+const PLATFORM_PACKAGE_PREFIX = `${CORE_PACKAGE_NAME}-`;
 
 const GOOS2PROCESS_PLATFORM = {
   windows: 'win32',
@@ -28,18 +31,22 @@ const binariesMatrix = Object.entries(GOOS2PROCESS_PLATFORM).flatMap(
       arch,
       platform,
       artifactName: `tsgolint-${goos}-${goarch}`,
-      npmPackageName: `@${NPM_ORG}/${platform}-${arch}`,
+      npmPackageName: `${PLATFORM_PACKAGE_PREFIX}${platform}-${arch}`,
     })),
 );
 
 const commonPackageJson = {
   version: npmPackageVersion,
-  description: 'High-performance type-aware linter powered by the native TypeScript compiler, for use with oxlint.',
+  description:
+    'Fork of oxlint-tsgolint built against the TypeScript 7.1 nightly, for use with oxlint.',
   license: 'MIT',
   author: 'auvred <aauvred@gmail.com>',
-  repository: 'github:oxc-project/tsgolint',
-  bugs: 'https://github.com/oxc-project/tsgolint/issues',
-  homepage: 'https://github.com/oxc-project/tsgolint#readme',
+  repository: {
+    type: 'git',
+    url: 'git+https://github.com/maschwenk/tsgolint.git',
+  },
+  bugs: 'https://github.com/maschwenk/tsgolint/issues',
+  homepage: 'https://github.com/maschwenk/tsgolint#readme',
   publishConfig: {
     access: 'public',
   },
@@ -97,7 +104,7 @@ await Promise.all([
         JSON.stringify(
           {
             ...commonPackageJson,
-            name: 'oxlint-tsgolint',
+            name: CORE_PACKAGE_NAME,
             bin: {
               tsgolint: './bin/tsgolint.js',
             },

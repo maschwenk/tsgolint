@@ -1,19 +1,69 @@
+# Builds tsgolint for every platform and publishes the fork's npm packages: @maschwenk/oxlint-tsgolint plus
+# @maschwenk/oxlint-tsgolint-<platform>-<arch> (tools/gen-npm-packages.mjs). Same shape as maschwenk/tsrs's release:
+# GitHub Actions (it needs the NPM_TOKEN repository secret and native macOS/arm64 runners for the smoke tests), with
+# the Linux CI on Depot (.depot/workflows/ci.yml).
+#
+# The version lives in npm/VERSION: <tsgolint base>-ts<TypeScript nightly>. The `typescript` submodule must be the
+# nightly's gitHead (checked below), so the published binary embeds exactly that TypeScript.
+#
+# Release: push the tag v<npm/VERSION>, or dispatch this workflow (dry_run defaults to true: build, smoke test and
+# pack, then `npm publish --dry-run`).
+
 name: Release
 
-permissions: {}
-
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
-      version:
-        type: string
-        required: true
-        description: version without leading `v`
+      dry_run:
+        description: "Build, test and pack, but run `npm publish --dry-run`"
+        type: boolean
+        default: true
+
+# One release per ref at a time; never cancel a publish half-way.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
+  version:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - id: v
+        run: |
+          version=$(tr -d '[:space:]' < npm/VERSION)
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match npm/VERSION ($version)"; exit 1
+          fi
+          ts_version=${version#*-ts}
+          expected=$(npm view "typescript@$ts_version" gitHead)
+          actual=$(git ls-tree HEAD typescript | awk '{print $3}')
+          if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::typescript submodule is $actual, but typescript@$ts_version was built from '$expected'"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  # Pure Go, so every platform cross-compiles on Linux (as upstream's release does).
   build:
-    runs-on: ubuntu-latest
+    name: build ${{ matrix.goos }}-${{ matrix.goarch }}
+    needs: version
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
     strategy:
+      fail-fast: false
       matrix:
         goos: [windows, linux, darwin]
         goarch: [amd64, arm64]
@@ -23,62 +73,102 @@ jobs:
           fetch-depth: 0 # required for git am --3way to work properly
           submodules: true
           persist-credentials: false
-
       - uses: ./.github/actions/setup
-
-      - name: Build binaries
+      - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: just build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          CGO_ENABLED: "0"
+        run: go build -ldflags="-s -w" -trimpath -o tsgolint ./cmd/tsgolint
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tsgolint-${{ matrix.goos }}-${{ matrix.goarch }}
           path: tsgolint
+          if-no-files-found: error
 
-  publish:
-    runs-on: ubuntu-latest
+  # Runs the e2e snapshot suite with the released binary on each platform Owner lints on.
+  smoke:
+    name: smoke ${{ matrix.artifact }}
     needs: build
-    permissions:
-      contents: write # for softprops/action-gh-release
-      id-token: write # for `pnpm publish --provenance`
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, artifact: tsgolint-linux-amd64 }
+          - { os: ubuntu-22.04-arm, artifact: tsgolint-linux-arm64 }
+          - { os: macos-14, artifact: tsgolint-darwin-arm64 }
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
       - uses: oxc-project/setup-node@f46a72f95efdc55273fcd042d61c84e723b2892c # v1.4.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: .
+      - name: Run e2e tests
+        run: |
+          chmod +x tsgolint
+          cd e2e
+          pnpm --ignore-workspace install --frozen-lockfile
+          pnpm --ignore-workspace run test --run
 
-      - name: Download artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+  publish:
+    needs: [version, build, smoke]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: tsgolint-*
           path: build
-
-      - name: chmod +x
-        run: find build -type f -name tsgolint -exec chmod +x {} \;
-
-      - name: Generate npm packages
+      - name: Assemble and pack
         env:
-          TSGOLINT_VERSION: ${{ inputs.version }}
-        run: node ./tools/gen-npm-packages.mjs
-
-      - name: Publish
+          TSGOLINT_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          for package in npm/*; do
-            pushd "$package"
-            pnpm publish --no-git-checks --provenance --access public
-            popd
-          done
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+          find build -type f -name tsgolint -exec chmod +x {} \;
+          node ./tools/gen-npm-packages.mjs
+          mkdir -p dist
+          # Platform packages first, then the main package that lists them as optionalDependencies.
+          for dir in npm/*/; do [ "$dir" = npm/core/ ] || echo "$dir"; done > dist/order.txt
+          echo npm/core/ >> dist/order.txt
+          while read -r dir; do (cd "$dir" && npm pack --pack-destination "$GITHUB_WORKSPACE/dist"); done < dist/order.txt
+          ls -l dist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          draft: false
-          name: v${{ inputs.version }}
-          tag_name: v${{ inputs.version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          name: npm-packages
+          path: dist/*.tgz
+      - name: Publish (platform packages first, then the main package)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRIVATE_REPO: ${{ github.event.repository.private }}
+        run: |
+          flags=(--access public --tag latest)
+          [ "$PRIVATE_REPO" = false ] && flags+=(--provenance)
+          [ "$DRY_RUN" = true ] && flags+=(--dry-run)
+          if [ "$DRY_RUN" != true ] && [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set"; exit 1
+          fi
+          while read -r dir; do
+            name=$(node -p "require('./${dir}package.json').name")
+            # Re-running a partially published release skips what is already on the registry.
+            if [ "$DRY_RUN" != true ] && npm view "$name@$VERSION" version > /dev/null 2>&1; then
+              echo "$name@$VERSION already published"
+              continue
+            fi
+            (cd "$dir" && npm publish "${flags[@]}")
+          done < dist/order.txt

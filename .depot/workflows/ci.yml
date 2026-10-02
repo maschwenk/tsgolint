@@ -1,0 +1,54 @@
+# Depot CI workflow (https://depot.dev/docs/ci/overview), same setup as maschwenk/tsrs: Linux CI runs on Depot
+# runners (Depot's runners for GitHub Actions only serve organization-owned repositories, so this repository is
+# connected to Depot CI instead). Source: .github/workflows/ci.yml (test-go, test-e2e), with runs-on mapped to the
+# Depot equivalents. Releases stay in .github/workflows/release.yml (NPM_TOKEN, native macOS/arm64 smoke tests).
+#
+# Triggers: pushes to the fork's TypeScript 7.1 branches and manual dispatch. Pull requests never trigger it.
+
+name: CI
+
+on:
+  push:
+    branches: ["ts-7.1*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-go:
+    runs-on: depot-ubuntu-22.04 # was: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # required for git am --3way to work properly
+          submodules: true
+          persist-credentials: false
+      - uses: oxc-project/setup-node@f46a72f95efdc55273fcd042d61c84e723b2892c # v1.4.1
+      - uses: ./.github/actions/setup
+      - name: Run go tests
+        run: go test ./internal/...
+
+  test-e2e:
+    runs-on: depot-ubuntu-22.04 # was: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # required for git am --3way to work properly
+          submodules: true
+          persist-credentials: false
+      - uses: oxc-project/setup-node@f46a72f95efdc55273fcd042d61c84e723b2892c # v1.4.1
+      - uses: ./.github/actions/setup
+      - name: Build
+        run: just build
+      - name: Run e2e tests
+        run: |
+          pnpm --ignore-workspace install --frozen-lockfile
+          pnpm --ignore-workspace run test --run
+        working-directory: e2e
