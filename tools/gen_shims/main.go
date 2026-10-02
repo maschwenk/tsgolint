@@ -38,6 +38,32 @@ func signatureHasUnexportedType(t types.Signature) bool {
 	return false
 }
 
+func isPointerShaped(t types.Type) bool {
+	switch t.Underlying().(type) {
+	case *types.Map, *types.Pointer, *types.Chan, *types.Signature:
+		return true
+	}
+	return false
+}
+
+func mentionsUnexportedType(t types.Type) bool {
+	switch t := t.(type) {
+	case *types.Named:
+		return !t.Obj().Exported()
+	case *types.Pointer:
+		return mentionsUnexportedType(t.Elem())
+	case *types.Slice:
+		return mentionsUnexportedType(t.Elem())
+	case *types.Array:
+		return mentionsUnexportedType(t.Elem())
+	case *types.Chan:
+		return mentionsUnexportedType(t.Elem())
+	case *types.Map:
+		return mentionsUnexportedType(t.Key()) || mentionsUnexportedType(t.Elem())
+	}
+	return false
+}
+
 type ExtraShim struct {
 	ExtraFunctions  []string
 	ExtraMethods    map[string]([]string)
@@ -329,6 +355,14 @@ func main() {
 										continue
 									}
 								}
+							}
+
+							if isPointerShaped(field.Type()) && mentionsUnexportedType(field.Type()) {
+								// Maps, pointers, channels, and funcs are one pointer word, so an
+								// unsafe.Pointer keeps the layout when the element type is unexported.
+								importPackage("unsafe", true)
+								shimBuilder.WriteString("unsafe.Pointer")
+								continue
 							}
 
 							fieldType := types.TypeString(field.Type(), qualifierOnlyPackageName)
