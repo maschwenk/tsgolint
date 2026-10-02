@@ -6,14 +6,16 @@
 # The version lives in npm/VERSION: <tsgolint base>-ts<TypeScript nightly>. The `typescript` submodule must be the
 # nightly's gitHead (checked below), so the published binary embeds exactly that TypeScript.
 #
-# Release: push the tag v<npm/VERSION>, or dispatch this workflow (dry_run defaults to true: build, smoke test and
-# pack, then `npm publish --dry-run`).
+# Release: push the tag v<npm/VERSION>. Pushes to the ts-7.1* branches run everything as a dry run (build, smoke
+# test, pack, `npm publish --dry-run`); so does a dispatch unless dry_run is unticked. Dispatch needs this file on
+# the default branch; the branch-push trigger does not.
 
 name: Release
 
 on:
   push:
     tags: ["v*"]
+    branches: ["ts-7.1*"]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -153,7 +155,7 @@ jobs:
       - name: Publish (platform packages first, then the main package)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          DRY_RUN: ${{ !(github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
           VERSION: ${{ needs.version.outputs.version }}
           PRIVATE_REPO: ${{ github.event.repository.private }}
         run: |
