@@ -328,7 +328,9 @@ func reportTypeScriptDiagnostics(program *compiler.Program, files []*ast.SourceF
 	}
 
 	if typeErrors.ReportSemantic {
-		semanticDiagnosticsByFile := program.GetSemanticDiagnosticsWithoutNoEmitFiltering(ctx, files)
+		// Unfiltered by noEmit. Deferred global diagnostics may also be included;
+		// they are dropped below because only diagnostics in the linted file are reported.
+		semanticDiagnosticsByFile := program.GetSemanticDiagnosticsForIncremental(ctx, files)
 
 		programOption := program.Options()
 

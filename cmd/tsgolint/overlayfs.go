@@ -73,10 +73,6 @@ func (o *overlayFS) Stat(path string) vfs.FileInfo {
 	return o.underlying.Stat(path)
 }
 
-func (o *overlayFS) WalkDir(root string, walkFn vfs.WalkDirFunc) error {
-	return o.underlying.WalkDir(root, walkFn)
-}
-
 func (o *overlayFS) Realpath(path string) string {
 	return o.underlying.Realpath(path)
 }

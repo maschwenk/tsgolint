@@ -1,5 +1,5 @@
 module github.com/microsoft/TypeScript/tsc/shim/tspath
 
-go 1.26
+go 1.27
 
-require github.com/microsoft/TypeScript/tsc v0.0.0-20260820043310-6d44e0584a85
+require github.com/microsoft/TypeScript/tsc v0.0.0-20261001235638-09b1db061731

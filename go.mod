@@ -1,6 +1,6 @@
 module github.com/typescript-eslint/tsgolint
 
-go 1.26
+go 1.27
 
 replace (
 	github.com/microsoft/TypeScript/tsc/shim/ast => ./shim/ast
@@ -22,6 +22,20 @@ replace (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/mackerelio/go-osstat v0.2.8 // indirect
+	github.com/microsoft/TypeScript/tsc v0.0.0-20261001235638-09b1db061731 // indirect
+	github.com/zeebo/xxh3 v1.1.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+)
+
+require (
+	github.com/dlclark/regexp2/v2 v2.8.0
+	github.com/go-json-experiment/json v0.0.0-20260820222146-c27c302e5fc3
 	github.com/microsoft/TypeScript/tsc/shim/ast v0.0.0
 	github.com/microsoft/TypeScript/tsc/shim/bundled v0.0.0
 	github.com/microsoft/TypeScript/tsc/shim/checker v0.0.0
@@ -38,23 +52,7 @@ require (
 	github.com/microsoft/TypeScript/tsc/shim/vfs/cachedvfs v0.0.0
 	github.com/microsoft/TypeScript/tsc/shim/vfs/osvfs v0.0.0
 	golang.org/x/sys v0.48.0
+	golang.org/x/text v0.42.0
 	golang.org/x/tools v0.50.0
 	gotest.tools/v3 v3.5.2
-)
-
-require (
-	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
-	github.com/mackerelio/go-osstat v0.2.7 // indirect
-	github.com/microsoft/TypeScript/tsc v0.0.0-20260820043310-6d44e0584a85 // indirect
-	github.com/zeebo/xxh3 v1.1.0 // indirect
-	golang.org/x/mod v0.39.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-)
-
-require (
-	github.com/dlclark/regexp2/v2 v2.8.0
-	github.com/go-json-experiment/json v0.0.0-20260820222146-c27c302e5fc3
-	golang.org/x/text v0.42.0
 )

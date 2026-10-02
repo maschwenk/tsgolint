@@ -127,11 +127,6 @@ func (vfs *OverlayVFS) Stat(path string) vfs.FileInfo {
 	return vfs.fs.Stat(path)
 }
 
-func (vfs *OverlayVFS) WalkDir(root string, walkFn vfs.WalkDirFunc) error {
-	// TODO: do we need to walk over virtual files here as well?
-	return vfs.fs.WalkDir(root, walkFn)
-}
-
 func (vfs *OverlayVFS) Realpath(path string) string {
 	if _, ok := vfs.VirtualFiles[path]; ok {
 		return path

@@ -186,7 +186,7 @@ type extra_Checker struct {
   SignatureCount uint32
   TotalInstantiationCount uint32
   instantiationCount uint32
-  instantiationDepth uint32
+  instantiationStack []*checker.Type
   conditionalConstraintDepth uint32
   inlineLevel int
   serializationLevel int
@@ -261,6 +261,7 @@ type extra_Checker struct {
   signatureArena core.Arena[checker.Signature]
   indexInfoArena core.Arena[checker.IndexInfo]
   mergedSymbols map[*ast.Symbol]*ast.Symbol
+  mergedExportsChecked collections.Set[*ast.Symbol]
   factory ast.NodeFactory
   nodeLinks core.LinkStore[*ast.Node, checker.NodeLinks]
   signatureLinks core.LinkStore[*ast.Node, checker.SignatureLinks]
@@ -361,6 +362,8 @@ type extra_Checker struct {
   anyBaseTypeIndexInfo *checker.IndexInfo
   patternAmbientModules []*ast.PatternAmbientModule
   patternAmbientModuleAugmentations ast.SymbolTable
+  patternAmbientModuleAugmentationTargets ast.SymbolTable
+  moduleImportAttributesTypes map[*ast.Symbol]*checker.Type
   globalObjectType *checker.Type
   globalFunctionType *checker.Type
   globalCallableFunctionType *checker.Type
@@ -384,6 +387,7 @@ type extra_Checker struct {
   typeResolutions []checker.TypeResolution
   resolutionStart int
   varianceStack []checker.VarianceStackEntry
+  callResolutionStack []*ast.Node
   apparentArgumentCount *int
   lastGetCombinedNodeFlagsNode *ast.Node
   lastGetCombinedNodeFlagsResult ast.NodeFlags
@@ -652,6 +656,9 @@ const IndexFlagsNoReducibleCheck = checker.IndexFlagsNoReducibleCheck
 const IndexFlagsNone = checker.IndexFlagsNone
 const IndexFlagsStringsOnly = checker.IndexFlagsStringsOnly
 type IndexInfo = checker.IndexInfo
+type IndexKind = checker.IndexKind
+const IndexKindNumber = checker.IndexKindNumber
+const IndexKindString = checker.IndexKindString
 type IndexType = checker.IndexType
 type IndexedAccessType = checker.IndexedAccessType
 type extra_IndexedAccessType struct {
@@ -670,6 +677,7 @@ type InferenceContext = checker.InferenceContext
 type InferenceContextInfo = checker.InferenceContextInfo
 type InferenceFlags = checker.InferenceFlags
 const InferenceFlagsAnyDefault = checker.InferenceFlagsAnyDefault
+const InferenceFlagsNoConstraintChecks = checker.InferenceFlagsNoConstraintChecks
 const InferenceFlagsNoDefault = checker.InferenceFlagsNoDefault
 const InferenceFlagsNone = checker.InferenceFlagsNone
 const InferenceFlagsSkippedGenericFunction = checker.InferenceFlagsSkippedGenericFunction
@@ -732,6 +740,8 @@ const IntrinsicTypeKindNoInfer = checker.IntrinsicTypeKindNoInfer
 const IntrinsicTypeKindUncapitalize = checker.IntrinsicTypeKindUncapitalize
 const IntrinsicTypeKindUnknown = checker.IntrinsicTypeKindUnknown
 const IntrinsicTypeKindUppercase = checker.IntrinsicTypeKindUppercase
+//go:linkname IsDistributedTypeParameter github.com/microsoft/TypeScript/tsc/internal/checker.IsDistributedTypeParameter
+func IsDistributedTypeParameter(t *checker.Type) bool
 //go:linkname IsExternalModuleSymbol github.com/microsoft/TypeScript/tsc/internal/checker.IsExternalModuleSymbol
 func IsExternalModuleSymbol(moduleSymbol *ast.Symbol) bool
 //go:linkname IsInTypeQuery github.com/microsoft/TypeScript/tsc/internal/checker.IsInTypeQuery
@@ -742,6 +752,8 @@ func IsKnownSymbol(symbol *ast.Symbol) bool
 func IsPrivateIdentifierSymbol(symbol *ast.Symbol) bool
 //go:linkname IsTupleType github.com/microsoft/TypeScript/tsc/internal/checker.IsTupleType
 func IsTupleType(t *checker.Type) bool
+//go:linkname IsTupleTypeTarget github.com/microsoft/TypeScript/tsc/internal/checker.IsTupleTypeTarget
+func IsTupleTypeTarget(t *checker.Type) bool
 //go:linkname IsTypeAny github.com/microsoft/TypeScript/tsc/internal/checker.IsTypeAny
 func IsTypeAny(t *checker.Type) bool
 //go:linkname IsTypeUsableAsPropertyName github.com/microsoft/TypeScript/tsc/internal/checker.IsTypeUsableAsPropertyName
@@ -918,7 +930,6 @@ const ObjectFlagsRequiresWidening = checker.ObjectFlagsRequiresWidening
 const ObjectFlagsReverseMapped = checker.ObjectFlagsReverseMapped
 const ObjectFlagsSingleSignatureType = checker.ObjectFlagsSingleSignatureType
 const ObjectFlagsTuple = checker.ObjectFlagsTuple
-const ObjectFlagsUnresolvedMembers = checker.ObjectFlagsUnresolvedMembers
 type ObjectLiteralDiscriminator = checker.ObjectLiteralDiscriminator
 type ObjectType = checker.ObjectType
 type ParseFlags = checker.ParseFlags

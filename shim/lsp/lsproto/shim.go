@@ -139,9 +139,11 @@ const CodeActionKindRefactorMove = lsproto.CodeActionKindRefactorMove
 const CodeActionKindRefactorRewrite = lsproto.CodeActionKindRefactorRewrite
 const CodeActionKindSource = lsproto.CodeActionKindSource
 const CodeActionKindSourceFixAll = lsproto.CodeActionKindSourceFixAll
+const CodeActionKindSourceFixAllTs = lsproto.CodeActionKindSourceFixAllTs
 const CodeActionKindSourceOrganizeImports = lsproto.CodeActionKindSourceOrganizeImports
-const CodeActionKindSourceRemoveUnusedImports = lsproto.CodeActionKindSourceRemoveUnusedImports
-const CodeActionKindSourceSortImports = lsproto.CodeActionKindSourceSortImports
+const CodeActionKindSourceOrganizeImportsTs = lsproto.CodeActionKindSourceOrganizeImportsTs
+const CodeActionKindSourceRemoveUnusedImportsTs = lsproto.CodeActionKindSourceRemoveUnusedImportsTs
+const CodeActionKindSourceSortImportsTs = lsproto.CodeActionKindSourceSortImportsTs
 type CodeActionOptions = lsproto.CodeActionOptions
 type CodeActionParams = lsproto.CodeActionParams
 type CodeActionRegistrationOptions = lsproto.CodeActionRegistrationOptions
@@ -174,7 +176,6 @@ type Color = lsproto.Color
 type ColorInformation = lsproto.ColorInformation
 type ColorPresentation = lsproto.ColorPresentation
 type ColorPresentationParams = lsproto.ColorPresentationParams
-type ColorPresentationRegistrationOptions = lsproto.ColorPresentationRegistrationOptions
 type ColorPresentationResponse = lsproto.ColorPresentationResponse
 type Command = lsproto.Command
 type CommandOrCodeAction = lsproto.CommandOrCodeAction
@@ -364,6 +365,8 @@ type DocumentSymbolRegistrationOptions = lsproto.DocumentSymbolRegistrationOptio
 type DocumentSymbolResponse = lsproto.DocumentSymbolResponse
 type DocumentUri = lsproto.DocumentUri
 type DocumentUriOrNull = lsproto.DocumentUriOrNull
+//go:linkname DynamicFileNameToDocumentUri github.com/microsoft/TypeScript/tsc/internal/lsp/lsproto.DynamicFileNameToDocumentUri
+func DynamicFileNameToDocumentUri(fileName string) lsproto.DocumentUri
 type EditRangeWithInsertReplace = lsproto.EditRangeWithInsertReplace
 type ErrorCode = lsproto.ErrorCode
 const ErrorCodeContentModified = lsproto.ErrorCodeContentModified
@@ -1145,6 +1148,8 @@ type TraceValue = lsproto.TraceValue
 const TraceValueMessages = lsproto.TraceValueMessages
 const TraceValueOff = lsproto.TraceValueOff
 const TraceValueVerbose = lsproto.TraceValueVerbose
+//go:linkname TryDynamicFileNameToDocumentUri github.com/microsoft/TypeScript/tsc/internal/lsp/lsproto.TryDynamicFileNameToDocumentUri
+func TryDynamicFileNameToDocumentUri(fileName string) (lsproto.DocumentUri, bool)
 type TypeDefinitionClientCapabilities = lsproto.TypeDefinitionClientCapabilities
 type TypeDefinitionOptions = lsproto.TypeDefinitionOptions
 type TypeDefinitionParams = lsproto.TypeDefinitionParams

@@ -48,6 +48,9 @@ func Program_ForEachCheckerParallel(recv *compiler.Program, cb func(idx int, c *
 func Program_GetSyntacticDiagnostics(recv *compiler.Program, ctx context.Context, sourceFile *ast.SourceFile) []*ast.Diagnostic
 //go:linkname Program_GetSemanticDiagnostics github.com/microsoft/TypeScript/tsc/internal/compiler.(*Program).GetSemanticDiagnostics
 func Program_GetSemanticDiagnostics(recv *compiler.Program, ctx context.Context, sourceFile *ast.SourceFile) []*ast.Diagnostic
+type ProgramConfig = compiler.ProgramConfig
+type ProgramFactories = compiler.ProgramFactories
+type ProgramHosts = compiler.ProgramHosts
 type ProgramLike = compiler.ProgramLike
 type ProgramOptions = compiler.ProgramOptions
 //go:linkname SortAndDeduplicateDiagnostics github.com/microsoft/TypeScript/tsc/internal/compiler.SortAndDeduplicateDiagnostics

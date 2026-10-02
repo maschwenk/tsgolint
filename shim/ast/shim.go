@@ -98,6 +98,9 @@ const CheckFlagsContainsPrivate = ast.CheckFlagsContainsPrivate
 const CheckFlagsContainsProtected = ast.CheckFlagsContainsProtected
 const CheckFlagsContainsPublic = ast.CheckFlagsContainsPublic
 const CheckFlagsContainsStatic = ast.CheckFlagsContainsStatic
+const CheckFlagsContainsWritePrivate = ast.CheckFlagsContainsWritePrivate
+const CheckFlagsContainsWriteProtected = ast.CheckFlagsContainsWriteProtected
+const CheckFlagsContainsWritePublic = ast.CheckFlagsContainsWritePublic
 const CheckFlagsDeferredType = ast.CheckFlagsDeferredType
 const CheckFlagsHasLiteralType = ast.CheckFlagsHasLiteralType
 const CheckFlagsHasNeverType = ast.CheckFlagsHasNeverType
@@ -475,6 +478,8 @@ func GetSemanticJsxChildren(children []*ast.JsxChild) []*ast.JsxChild
 func GetSourceFileOfModule(module *ast.Symbol) *ast.SourceFile
 //go:linkname GetSourceFileOfNode github.com/microsoft/TypeScript/tsc/internal/ast.GetSourceFileOfNode
 func GetSourceFileOfNode(node *ast.Node) *ast.SourceFile
+//go:linkname GetSourceFileOfSymbol github.com/microsoft/TypeScript/tsc/internal/ast.GetSourceFileOfSymbol
+func GetSourceFileOfSymbol(symbol *ast.Symbol) *ast.SourceFile
 //go:linkname GetSuperContainer github.com/microsoft/TypeScript/tsc/internal/ast.GetSuperContainer
 func GetSuperContainer(node *ast.Node, stopOnFunctions bool) *ast.Node
 //go:linkname GetSymbolId github.com/microsoft/TypeScript/tsc/internal/ast.GetSymbolId
@@ -506,6 +511,8 @@ func HasDecorators(node *ast.Node) bool
 //go:linkname HasDynamicName github.com/microsoft/TypeScript/tsc/internal/ast.HasDynamicName
 func HasDynamicName(declaration *ast.Node) bool
 type HasFileName = ast.HasFileName
+//go:linkname HasImportAttributes github.com/microsoft/TypeScript/tsc/internal/ast.HasImportAttributes
+func HasImportAttributes(node *ast.Node) bool
 //go:linkname HasInferredType github.com/microsoft/TypeScript/tsc/internal/ast.HasInferredType
 func HasInferredType(node *ast.Node) bool
 //go:linkname HasInitializer github.com/microsoft/TypeScript/tsc/internal/ast.HasInitializer
@@ -1272,8 +1279,6 @@ func IsParenthesizedExpression(node *ast.Node) bool
 func IsParenthesizedTypeNode(node *ast.Node) bool
 //go:linkname IsParseTreeNode github.com/microsoft/TypeScript/tsc/internal/ast.IsParseTreeNode
 func IsParseTreeNode(node *ast.Node) bool
-//go:linkname IsPartOfExclusivelyTypeOnlyImportOrExportDeclaration github.com/microsoft/TypeScript/tsc/internal/ast.IsPartOfExclusivelyTypeOnlyImportOrExportDeclaration
-func IsPartOfExclusivelyTypeOnlyImportOrExportDeclaration(node *ast.Node) bool
 //go:linkname IsPartOfParameterDeclaration github.com/microsoft/TypeScript/tsc/internal/ast.IsPartOfParameterDeclaration
 func IsPartOfParameterDeclaration(node *ast.Node) bool
 //go:linkname IsPartOfTypeNode github.com/microsoft/TypeScript/tsc/internal/ast.IsPartOfTypeNode
@@ -1386,6 +1391,8 @@ func IsStatic(node *ast.Node) bool
 func IsStringLiteral(node *ast.Node) bool
 //go:linkname IsStringLiteralLike github.com/microsoft/TypeScript/tsc/internal/ast.IsStringLiteralLike
 func IsStringLiteralLike(node *ast.Node) bool
+//go:linkname IsStringLiteralLikeType github.com/microsoft/TypeScript/tsc/internal/ast.IsStringLiteralLikeType
+func IsStringLiteralLikeType(node *ast.Node) bool
 //go:linkname IsStringOrNumericLiteralLike github.com/microsoft/TypeScript/tsc/internal/ast.IsStringOrNumericLiteralLike
 func IsStringOrNumericLiteralLike(node *ast.Node) bool
 //go:linkname IsStringTextContainingNode github.com/microsoft/TypeScript/tsc/internal/ast.IsStringTextContainingNode
@@ -2176,6 +2183,8 @@ func NewDiagnostic(file *ast.SourceFile, loc core.TextRange, message *diagnostic
 func NewDiagnosticChain(chain *ast.Diagnostic, message *diagnostics.Message, args ...any) *ast.Diagnostic
 //go:linkname NewDiagnosticFromSerialized github.com/microsoft/TypeScript/tsc/internal/ast.NewDiagnosticFromSerialized
 func NewDiagnosticFromSerialized(file *ast.SourceFile, loc core.TextRange, code int32, category diagnostics.Category, messageKey diagnostics.Key, messageArgs []string, messageChain []*ast.Diagnostic, relatedInformation []*ast.Diagnostic, reportsUnnecessary bool, reportsDeprecated bool, skippedOnNoEmit bool) *ast.Diagnostic
+//go:linkname NewDiagnosticFromText github.com/microsoft/TypeScript/tsc/internal/ast.NewDiagnosticFromText
+func NewDiagnosticFromText(file *ast.SourceFile, loc core.TextRange, code int32, category diagnostics.Category, text string, messageChain []*ast.Diagnostic, relatedInformation []*ast.Diagnostic, reportsUnnecessary bool, reportsDeprecated bool) *ast.Diagnostic
 type NewExpression = ast.NewExpression
 type NewExpressionNode = ast.NewExpressionNode
 //go:linkname NewExternalDiagnostic github.com/microsoft/TypeScript/tsc/internal/ast.NewExternalDiagnostic
@@ -2669,6 +2678,8 @@ type TokenNode = ast.TokenNode
 type TokenSyntaxKind = ast.TokenSyntaxKind
 type TriviaSyntaxKind = ast.TriviaSyntaxKind
 type TrueLiteral = ast.TrueLiteral
+//go:linkname TryGetAmbientModuleNameFromSymbolName github.com/microsoft/TypeScript/tsc/internal/ast.TryGetAmbientModuleNameFromSymbolName
+func TryGetAmbientModuleNameFromSymbolName(s string) (string, bool)
 //go:linkname TryGetClassExtendingExpressionWithTypeArguments github.com/microsoft/TypeScript/tsc/internal/ast.TryGetClassExtendingExpressionWithTypeArguments
 func TryGetClassExtendingExpressionWithTypeArguments(node *ast.Node) *ast.ClassLikeDeclaration
 //go:linkname TryGetClassImplementingOrExtendingHeritageClauseElement github.com/microsoft/TypeScript/tsc/internal/ast.TryGetClassImplementingOrExtendingHeritageClauseElement
